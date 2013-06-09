@@ -29,13 +29,9 @@ public class UpdateInterceptor implements Interceptor {
         if(!sql.startsWith("#")){
             return invocation.proceed();
         }
-
-        String tableName = sql.substring(1);
-        String resultMapId = null;
-        if(tableName.indexOf("(") != -1){
-            resultMapId = tableName.substring(tableName.indexOf("(")+1,tableName.indexOf(")"));
-            tableName = tableName.substring(0,tableName.indexOf("("));
-        }
+        sql = sql.substring(1);
+        String resultMapId = sql.substring(sql.indexOf("(")+1,sql.indexOf(")"));
+        String tableName = sql.substring(0,sql.indexOf("("));
 
         if(resultMapId.indexOf(".") == -1){
             resultMapId = ms.getId().substring(0,ms.getId().lastIndexOf(".")+1)+resultMapId;
