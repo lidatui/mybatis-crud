@@ -68,7 +68,7 @@ public class UpdateInterceptor implements Interceptor {
             sql = insert(tableName,mappings);
         }else if(ms.getSqlCommandType().equals(SqlCommandType.UPDATE)){
             sql = update(tableName, mappings);
-        }if(ms.getSqlCommandType().equals(SqlCommandType.DELETE)){
+        }else if(ms.getSqlCommandType().equals(SqlCommandType.DELETE)){
             sql = delete(tableName, resultMap);
         }
 
