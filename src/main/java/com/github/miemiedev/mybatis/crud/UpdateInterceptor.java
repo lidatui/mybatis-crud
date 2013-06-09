@@ -18,6 +18,7 @@ import java.util.Properties;
         method = "update",
         args = {MappedStatement.class, Object.class})})
 public class UpdateInterceptor implements Interceptor {
+    Logger logger = LoggerFactory.getLogger(UpdateInterceptor.class);
     static int MAPPED_STATEMENT_INDEX = 0;
     static int PARAMETER_INDEX = 1;
 
@@ -50,6 +51,7 @@ public class UpdateInterceptor implements Interceptor {
             sql = delete(tableName, resultMap);
         }
 
+        logger.debug("Generate SQL => {}" ,sql);
         TextSqlNode sqlNode = new TextSqlNode(sql);
         DynamicSqlSource sqlSource = new DynamicSqlSource(ms.getConfiguration(),sqlNode);
 
@@ -58,18 +60,36 @@ public class UpdateInterceptor implements Interceptor {
         return invocation.proceed();
     }
 
+    public void addColumn(StringBuffer sql, ResultMapping resultMapping){
+        sql.append(resultMapping.getColumn().toUpperCase(Locale.US));
+    }
+
+    public void addProperty(StringBuffer sql, ResultMapping resultMapping){
+        sql.append("#{").append(resultMapping.getProperty()).append(",");
+        if(resultMapping.getJdbcType()!= null){
+            sql.append("jdbcType=").append(resultMapping.getJdbcType().name()).append(",");
+        }
+        if(resultMapping.getTypeHandler()!=null){
+            sql.append("typeHandler=").append(resultMapping.getTypeHandler().getClass().getName()).append(",");
+        }
+        sql.deleteCharAt(sql.length()-1);
+        sql.append("}");
+    }
+
 
     private String insert(String tableName,ResultMap resultMap){
         StringBuffer insertSql = new StringBuffer("INSERT INTO ").append(tableName).append(" (");
         for(ResultMapping rm : resultMap.getResultMappings()){
-            insertSql.append(rm.getColumn().toUpperCase(Locale.US)).append(",");
+            addColumn(insertSql,rm);
+            insertSql.append(",");
         }
         if(!resultMap.getResultMappings().isEmpty()){
             insertSql.deleteCharAt(insertSql.length()-1);
         }
         insertSql.append(") VALUES (");
         for(ResultMapping rm : resultMap.getResultMappings()){
-            insertSql.append("#{").append(rm.getProperty()).append("},");
+            addProperty(insertSql,rm);
+            insertSql.append(",");
         }
         if(!resultMap.getResultMappings().isEmpty()){
             insertSql.deleteCharAt(insertSql.length()-1);
@@ -90,11 +110,16 @@ public class UpdateInterceptor implements Interceptor {
                     }
                 }
                 if(isId){
-                    idSql.append(rm.getColumn().toUpperCase(Locale.US)).append("=#{").append(rm.getProperty()).append("}");
+                    addColumn(idSql,rm);
+                    idSql.append("=");
+                    addProperty(idSql,rm);
                     continue;
                 }
             }
-            updateSql.append(rm.getColumn().toUpperCase(Locale.US)).append("=#{").append(rm.getProperty()).append("},");
+            addColumn(updateSql,rm);
+            updateSql.append("=");
+            addProperty(updateSql,rm);
+            updateSql.append(",");
         }
         if(!resultMap.getResultMappings().isEmpty()){
             updateSql.deleteCharAt(updateSql.length()-1);
@@ -107,17 +132,18 @@ public class UpdateInterceptor implements Interceptor {
         StringBuffer deleteSql = new StringBuffer("DELETE FROM ").append(tableName).append(" WHERE ");
         for(ResultMapping rm : resultMap.getResultMappings()){
             if(!rm.getFlags().isEmpty()){
-                boolean isId = false;
                 for(ResultFlag flag : rm.getFlags()){
                     if(flag.equals(ResultFlag.ID)){
-                        isId = true;
+                        addColumn(deleteSql,rm);
+                        deleteSql.append("=");
+                        addProperty(deleteSql,rm);
+                        deleteSql.append(" and ");
                     }
                 }
-                if(isId){
-                    deleteSql.append(rm.getColumn().toUpperCase(Locale.US)).append("=#{").append(rm.getProperty()).append("}");
-                    break;
-                }
             }
+        }
+        if(!resultMap.getResultMappings().isEmpty()){
+            deleteSql.delete(deleteSql.length()-5 ,deleteSql.length()-1);
         }
         return deleteSql.toString();
     }
