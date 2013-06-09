@@ -36,7 +36,10 @@ public class UpdateInterceptor implements Interceptor {
             resultMapId = tableName.substring(tableName.indexOf("(")+1,tableName.indexOf(")"));
             tableName = tableName.substring(0,tableName.indexOf("("));
         }
-        resultMapId = ms.getId().substring(0,ms.getId().lastIndexOf(".")+1)+resultMapId;
+
+        if(resultMapId.indexOf(".") == -1){
+            resultMapId = ms.getId().substring(0,ms.getId().lastIndexOf(".")+1)+resultMapId;
+        }
 
         ResultMap resultMap = ms.getConfiguration().getResultMap(resultMapId);
 
@@ -44,20 +47,27 @@ public class UpdateInterceptor implements Interceptor {
             throw new RuntimeException("Can not find ResultMap by id: "+resultMapId);
         }
 
-        Set<String> properties = null;
+
+        Set<ResultMapping> mappings = new HashSet<ResultMapping>();
+
         if(parameter instanceof Map){
-            properties = ((Map)parameter).keySet();
-        }else{
-            properties = new HashSet<String>();
             for(ResultMapping rm : resultMap.getResultMappings()){
-                properties.add(rm.getProperty());
+                for(String property : ((Map<String,Object>)parameter).keySet()){
+                    if(rm.getProperty().toUpperCase(Locale.US).equals(property.toUpperCase(Locale.US))){
+                        mappings.add(rm);
+                    }
+                }
+            }
+        }else{
+            for(ResultMapping rm : resultMap.getResultMappings()){
+                mappings.add(rm);
             }
         }
 
         if(ms.getSqlCommandType().equals(SqlCommandType.INSERT)) {
-            sql = insert(tableName,resultMap,properties);
+            sql = insert(tableName,mappings);
         }else if(ms.getSqlCommandType().equals(SqlCommandType.UPDATE)){
-            sql = update(tableName, resultMap, properties);
+            sql = update(tableName, mappings);
         }if(ms.getSqlCommandType().equals(SqlCommandType.DELETE)){
             sql = delete(tableName, resultMap);
         }
@@ -88,22 +98,18 @@ public class UpdateInterceptor implements Interceptor {
     }
 
 
-    private String insert(String tableName,ResultMap resultMap,Set<String> properties){
+    private String insert(String tableName,Set<ResultMapping> mappings){
         StringBuffer insertSql = new StringBuffer("INSERT INTO ").append(tableName).append(" (");
         StringBuffer columnSql = new StringBuffer();
         StringBuffer propertySql = new StringBuffer();
-        for(ResultMapping rm : resultMap.getResultMappings()){
-            for(String property : properties){
-                if(rm.getProperty().toUpperCase(Locale.US).equals(property.toUpperCase(Locale.US))){
-                    addColumn(columnSql,rm);
-                    columnSql.append(",");
+        for(ResultMapping mapping : mappings){
+            addColumn(columnSql,mapping);
+            columnSql.append(",");
 
-                    addProperty(propertySql,rm);
-                    propertySql.append(",");
-                }
-            }
+            addProperty(propertySql,mapping);
+            propertySql.append(",");
         }
-        if(!properties.isEmpty()){
+        if(!mappings.isEmpty()){
             columnSql.deleteCharAt(columnSql.length()-1);
             propertySql.deleteCharAt(propertySql.length()-1);
         }
@@ -111,35 +117,30 @@ public class UpdateInterceptor implements Interceptor {
         return insertSql.toString();
     }
 
-    private String update(String tableName,ResultMap resultMap,Set<String> properties){
+    private String update(String tableName,Set<ResultMapping> mappings){
         StringBuffer updateSql = new StringBuffer("UPDATE ").append(tableName).append(" SET ");
         StringBuffer idSql = new StringBuffer(" WHERE ");
-        for(ResultMapping rm : resultMap.getResultMappings()){
-            for(String property : properties){
-                if(rm.getProperty().toUpperCase(Locale.US).equals(property.toUpperCase(Locale.US))){
-                    if(!rm.getFlags().isEmpty()){
-                        boolean isId = false;
-                        for(ResultFlag flag : rm.getFlags()){
-                            if(flag.equals(ResultFlag.ID)){
-                                isId = true;
-                            }
-                        }
-                        if(isId){
-                            addColumn(idSql,rm);
-                            idSql.append("=");
-                            addProperty(idSql,rm);
-                            continue;
-                        }
+        for(ResultMapping mapping : mappings){
+            if(!mapping.getFlags().isEmpty()){
+                boolean isId = false;
+                for(ResultFlag flag : mapping.getFlags()){
+                    if(flag.equals(ResultFlag.ID)){
+                        isId = true;
                     }
-                    addColumn(updateSql, rm);
-                    updateSql.append("=");
-                    addProperty(updateSql,rm);
-                    updateSql.append(",");
                 }
-
+                if(isId){
+                    addColumn(idSql,mapping);
+                    idSql.append("=");
+                    addProperty(idSql,mapping);
+                    continue;
+                }
             }
+            addColumn(updateSql, mapping);
+            updateSql.append("=");
+            addProperty(updateSql,mapping);
+            updateSql.append(",");
         }
-        if(!resultMap.getResultMappings().isEmpty()){
+        if(!mappings.isEmpty()){
             updateSql.deleteCharAt(updateSql.length()-1);
         }
         updateSql.append(idSql);
@@ -167,28 +168,6 @@ public class UpdateInterceptor implements Interceptor {
     }
 
 
-
-
-
-    private MappedStatement copyFromNewSql(MappedStatement ms, BoundSql boundSql,
-                                           String sql){
-        BoundSql newBoundSql = copyFromBoundSql(ms, boundSql, sql);
-        return copyFromMappedStatement(ms, new BoundSqlSqlSource(newBoundSql));
-    }
-
-    private BoundSql copyFromBoundSql(MappedStatement ms, BoundSql boundSql,
-                                      String sql) {
-        BoundSql newBoundSql = new BoundSql(ms.getConfiguration(),sql, boundSql.getParameterMappings(), boundSql.getParameterObject());
-        for (ParameterMapping mapping : boundSql.getParameterMappings()) {
-            String prop = mapping.getProperty();
-            if (boundSql.hasAdditionalParameter(prop)) {
-                newBoundSql.setAdditionalParameter(prop, boundSql.getAdditionalParameter(prop));
-            }
-        }
-        return newBoundSql;
-    }
-
-    //see: MapperBuilderAssistant
     private MappedStatement copyFromMappedStatement(MappedStatement ms,SqlSource newSqlSource) {
         MappedStatement.Builder builder = new MappedStatement.Builder(ms.getConfiguration(),ms.getId(),newSqlSource,ms.getSqlCommandType());
 
