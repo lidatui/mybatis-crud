@@ -48,19 +48,16 @@ public class UpdateInterceptor implements Interceptor {
 
 
         Set<ResultMapping> mappings = new HashSet<ResultMapping>();
-
         if(parameter instanceof Map){
-            for(ResultMapping rm : resultMap.getResultMappings()){
+            for(ResultMapping mapping : resultMap.getResultMappings()){
                 for(String property : ((Map<String,Object>)parameter).keySet()){
-                    if(rm.getProperty().toUpperCase(Locale.US).equals(property.toUpperCase(Locale.US))){
-                        mappings.add(rm);
+                    if(mapping.getProperty().toUpperCase(Locale.US).equals(property.toUpperCase(Locale.US))){
+                        mappings.add(mapping);
                     }
                 }
             }
         }else{
-            for(ResultMapping rm : resultMap.getResultMappings()){
-                mappings.add(rm);
-            }
+            mappings.addAll(resultMap.getIdResultMappings());
         }
 
         if(ms.getSqlCommandType().equals(SqlCommandType.INSERT)) {
