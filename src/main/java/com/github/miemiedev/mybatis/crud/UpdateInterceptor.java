@@ -39,6 +39,11 @@ public class UpdateInterceptor implements Interceptor {
         resultMapId = ms.getId().substring(0,ms.getId().lastIndexOf(".")+1)+resultMapId;
 
         ResultMap resultMap = ms.getConfiguration().getResultMap(resultMapId);
+
+        if(resultMap == null){
+            throw new RuntimeException("Can not find ResultMap by id: "+resultMapId);
+        }
+
         Set<String> properties = null;
         if(parameter instanceof Map){
             properties = ((Map)parameter).keySet();
