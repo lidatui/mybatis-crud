@@ -8,10 +8,7 @@ import org.apache.ibatis.plugin.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collection;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 
 @Intercepts({@Signature(
         type= Executor.class,
@@ -42,11 +39,20 @@ public class UpdateInterceptor implements Interceptor {
         resultMapId = ms.getId().substring(0,ms.getId().lastIndexOf(".")+1)+resultMapId;
 
         ResultMap resultMap = ms.getConfiguration().getResultMap(resultMapId);
+        Set<String> properties = null;
+        if(parameter instanceof Map){
+            properties = ((Map)parameter).keySet();
+        }else{
+            properties = new HashSet<String>();
+            for(ResultMapping rm : resultMap.getResultMappings()){
+                properties.add(rm.getProperty());
+            }
+        }
 
         if(ms.getSqlCommandType().equals(SqlCommandType.INSERT)) {
-            sql = insert(tableName,resultMap);
+            sql = insert(tableName,resultMap,properties);
         }else if(ms.getSqlCommandType().equals(SqlCommandType.UPDATE)){
-            sql = update(tableName, resultMap);
+            sql = update(tableName, resultMap, properties);
         }if(ms.getSqlCommandType().equals(SqlCommandType.DELETE)){
             sql = delete(tableName, resultMap);
         }
@@ -77,49 +83,56 @@ public class UpdateInterceptor implements Interceptor {
     }
 
 
-    private String insert(String tableName,ResultMap resultMap){
+    private String insert(String tableName,ResultMap resultMap,Set<String> properties){
         StringBuffer insertSql = new StringBuffer("INSERT INTO ").append(tableName).append(" (");
+        StringBuffer columnSql = new StringBuffer();
+        StringBuffer propertySql = new StringBuffer();
         for(ResultMapping rm : resultMap.getResultMappings()){
-            addColumn(insertSql,rm);
-            insertSql.append(",");
+            for(String property : properties){
+                if(rm.getProperty().toUpperCase(Locale.US).equals(property.toUpperCase(Locale.US))){
+                    addColumn(columnSql,rm);
+                    columnSql.append(",");
+
+                    addProperty(propertySql,rm);
+                    propertySql.append(",");
+                }
+            }
         }
-        if(!resultMap.getResultMappings().isEmpty()){
-            insertSql.deleteCharAt(insertSql.length()-1);
+        if(!properties.isEmpty()){
+            columnSql.deleteCharAt(columnSql.length()-1);
+            propertySql.deleteCharAt(propertySql.length()-1);
         }
-        insertSql.append(") VALUES (");
-        for(ResultMapping rm : resultMap.getResultMappings()){
-            addProperty(insertSql,rm);
-            insertSql.append(",");
-        }
-        if(!resultMap.getResultMappings().isEmpty()){
-            insertSql.deleteCharAt(insertSql.length()-1);
-        }
-        insertSql.append(")");
+        insertSql.append(columnSql).append(") VALUES (").append(propertySql).append(")");
         return insertSql.toString();
     }
 
-    private String update(String tableName,ResultMap resultMap){
+    private String update(String tableName,ResultMap resultMap,Set<String> properties){
         StringBuffer updateSql = new StringBuffer("UPDATE ").append(tableName).append(" SET ");
         StringBuffer idSql = new StringBuffer(" WHERE ");
         for(ResultMapping rm : resultMap.getResultMappings()){
-            if(!rm.getFlags().isEmpty()){
-                boolean isId = false;
-                for(ResultFlag flag : rm.getFlags()){
-                    if(flag.equals(ResultFlag.ID)){
-                        isId = true;
+            for(String property : properties){
+                if(rm.getProperty().toUpperCase(Locale.US).equals(property.toUpperCase(Locale.US))){
+                    if(!rm.getFlags().isEmpty()){
+                        boolean isId = false;
+                        for(ResultFlag flag : rm.getFlags()){
+                            if(flag.equals(ResultFlag.ID)){
+                                isId = true;
+                            }
+                        }
+                        if(isId){
+                            addColumn(idSql,rm);
+                            idSql.append("=");
+                            addProperty(idSql,rm);
+                            continue;
+                        }
                     }
+                    addColumn(updateSql, rm);
+                    updateSql.append("=");
+                    addProperty(updateSql,rm);
+                    updateSql.append(",");
                 }
-                if(isId){
-                    addColumn(idSql,rm);
-                    idSql.append("=");
-                    addProperty(idSql,rm);
-                    continue;
-                }
+
             }
-            addColumn(updateSql,rm);
-            updateSql.append("=");
-            addProperty(updateSql,rm);
-            updateSql.append(",");
         }
         if(!resultMap.getResultMappings().isEmpty()){
             updateSql.deleteCharAt(updateSql.length()-1);
