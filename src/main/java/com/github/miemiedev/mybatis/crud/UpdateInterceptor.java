@@ -57,7 +57,7 @@ public class UpdateInterceptor implements Interceptor {
                 }
             }
         }else{
-            mappings.addAll(resultMap.getIdResultMappings());
+            mappings.addAll(resultMap.getResultMappings());
         }
 
         if(ms.getSqlCommandType().equals(SqlCommandType.INSERT)) {
