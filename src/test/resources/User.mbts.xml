@@ -12,10 +12,6 @@
         <result property="score" column="score"/>
     </resultMap>
 
-	<select id="findByCity" resultType="map">
-		select * from TEST_USER where city = #{city}
-	</select>
-
     <sql id="tableMap">
          #TEST_USER(UserResultMap)
     </sql>
@@ -33,5 +29,10 @@
     <delete id="delete">
         <include refid="tableMap"/>
     </delete>
+
+
+    <insert id="addOld">
+        INSERT INTO TEST_USER (ID,NAME,AGE,GENDER,CITY,SCORE) VALUES (#{id},#{name},#{age},#{gender},#{city},#{score})
+    </insert>
 
 </mapper>
