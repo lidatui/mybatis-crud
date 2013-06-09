@@ -31,7 +31,7 @@ public class UpdateInterceptor implements Interceptor {
         }
         sql = sql.substring(1);
         if(sql.indexOf("(") == -1 || sql.indexOf(")") == -1){
-            throw new RuntimeException("Expression not have ResultMapId.");
+            throw new RuntimeException("Expression need set ResultMapId.");
         }
         String resultMapId = sql.substring(sql.indexOf("(")+1,sql.indexOf(")"));
         String tableName = sql.substring(0,sql.indexOf("("));
