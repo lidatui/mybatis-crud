@@ -32,6 +32,9 @@
 
 
     <insert id="addOld">
+        <selectKey keyProperty="id" resultType="Long" order="BEFORE">
+            SELECT fpsq_new_app_id.NEXTVAL FROM DUAL
+        </selectKey>
         INSERT INTO TEST_USER (ID,NAME,AGE,GENDER,CITY,SCORE) VALUES (#{id},#{name},#{age},#{gender},#{city},#{score})
     </insert>
 

@@ -22,7 +22,7 @@ public class CrudTester extends SimulateBaseDao{
         user.setScore(96D);
         user.setAge(35);
 
-        int count = session.insert("db.table.user.add", user);
+        int count = session.insert("db.table.user.addOld", user);
         assertEquals(count,1);
         System.out.println(user);
         session.commit();
