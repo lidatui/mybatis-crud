@@ -62,7 +62,7 @@ public class UpdateInterceptor implements Interceptor {
             sql = delete(tableName, resultMap);
         }
 
-        logger.debug("Generate SQL => {}" ,sql);
+        logger.debug("Generate SQL expression => {}" ,sql);
         TextSqlNode sqlNode = new TextSqlNode(sql);
         DynamicSqlSource sqlSource = new DynamicSqlSource(ms.getConfiguration(),sqlNode);
 
