@@ -120,19 +120,11 @@ public class UpdateInterceptor implements Interceptor {
         StringBuffer updateSql = new StringBuffer("UPDATE ").append(tableName).append(" SET ");
         StringBuffer idSql = new StringBuffer(" WHERE ");
         for(ResultMapping mapping : mappings){
-            if(!mapping.getFlags().isEmpty()){
-                boolean isId = false;
-                for(ResultFlag flag : mapping.getFlags()){
-                    if(flag.equals(ResultFlag.ID)){
-                        isId = true;
-                    }
-                }
-                if(isId){
-                    addColumn(idSql,mapping);
-                    idSql.append("=");
-                    addProperty(idSql,mapping);
-                    continue;
-                }
+            if(!mapping.getFlags().isEmpty() && mapping.getFlags().contains(ResultFlag.ID)){
+                addColumn(idSql,mapping);
+                idSql.append("=");
+                addProperty(idSql,mapping);
+                continue;
             }
             addColumn(updateSql, mapping);
             updateSql.append("=");
@@ -148,16 +140,12 @@ public class UpdateInterceptor implements Interceptor {
 
     private String delete(String tableName, ResultMap resultMap){
         StringBuffer deleteSql = new StringBuffer("DELETE FROM ").append(tableName).append(" WHERE ");
-        for(ResultMapping rm : resultMap.getResultMappings()){
-            if(!rm.getFlags().isEmpty()){
-                for(ResultFlag flag : rm.getFlags()){
-                    if(flag.equals(ResultFlag.ID)){
-                        addColumn(deleteSql,rm);
-                        deleteSql.append("=");
-                        addProperty(deleteSql,rm);
-                        deleteSql.append(" and ");
-                    }
-                }
+        for(ResultMapping mapping : resultMap.getResultMappings()){
+            if(!mapping.getFlags().isEmpty() && mapping.getFlags().contains(ResultFlag.ID)){
+                addColumn(deleteSql,mapping);
+                deleteSql.append("=");
+                addProperty(deleteSql,mapping);
+                continue;
             }
         }
         if(!resultMap.getResultMappings().isEmpty()){
