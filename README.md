@@ -1,4 +1,4 @@
-使用ResultMap做映射来生成简单的Insert、Update和Delete语句，想偷懒的无奈之举╮（╯_╰）╭。
+使用ResultMap做映射来生成简单的Insert、Update和Delete语句，到底怎么写更方便自己权衡吧，我也很无奈╮（╯_╰）╭。
 
 
 
