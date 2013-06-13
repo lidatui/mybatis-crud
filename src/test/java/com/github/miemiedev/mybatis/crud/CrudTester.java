@@ -13,6 +13,16 @@ import java.util.Map;
  */
 
 public class CrudTester extends SimulateBaseDao{
+
+    @Test
+    public void find(){
+        SqlSession session = sessionFactory.openSession();
+        List<User> users = session.selectList("db.table.user.find");
+        System.out.println(users);
+        session.close();
+    }
+
+
     @Test
     public void insert(){
         SqlSession session = sessionFactory.openSession();
@@ -41,6 +51,11 @@ public class CrudTester extends SimulateBaseDao{
         user.setName("newbie");
         user.setScore(96D);
         user.setAge(35);
+
+        Dept dept = new Dept();
+        dept.setId(1L);
+
+        user.setDept(dept);
 
         int count = session.insert("db.table.user.add", user);
         assertEquals(count,1);

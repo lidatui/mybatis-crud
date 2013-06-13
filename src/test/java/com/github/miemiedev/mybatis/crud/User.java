@@ -9,6 +9,7 @@ public class User {
     private Integer age;
     private String city;
     private Double score;
+    private Dept dept;
 
     public Long getId() {
         return id;
@@ -58,6 +59,16 @@ public class User {
         this.score = score;
     }
 
+    public Dept getDept() {
+        return dept;
+    }
+
+    public void setDept(Dept dept) {
+        this.dept = dept;
+    }
+
+
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("User{");
@@ -67,6 +78,7 @@ public class User {
         sb.append(", age=").append(age);
         sb.append(", city='").append(city).append('\'');
         sb.append(", score=").append(score);
+        sb.append(", dept=").append(dept);
         sb.append('}');
         return sb.toString();
     }

@@ -60,6 +60,14 @@ public class UpdateInterceptor implements Interceptor {
             mappings.addAll(resultMap.getResultMappings());
         }
 
+       Iterator<ResultMapping> mappingsIterator  = mappings.iterator();
+        while (mappingsIterator.hasNext()) {
+            ResultMapping mapping =  mappingsIterator.next();
+            if(mapping.getNestedQueryId() != null || mapping.getNestedResultMapId() !=null){
+                mappingsIterator.remove();
+            }
+        }
+
         if(ms.getSqlCommandType().equals(SqlCommandType.INSERT)) {
             sql = insert(tableName,mappings);
         }else if(ms.getSqlCommandType().equals(SqlCommandType.UPDATE)){
@@ -144,9 +152,6 @@ public class UpdateInterceptor implements Interceptor {
                 addProperty(deleteSql,mapping);
                 continue;
             }
-        }
-        if(!resultMap.getResultMappings().isEmpty()){
-            deleteSql.delete(deleteSql.length()-5 ,deleteSql.length()-1);
         }
         return deleteSql.toString();
     }

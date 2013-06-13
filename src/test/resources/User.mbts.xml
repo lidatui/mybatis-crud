@@ -10,8 +10,19 @@
         <result property="gender" column="gender"/>
         <result property="city" column="city"/>
         <result property="score" column="score"/>
+        <result property="dept.id" column="deptId"/>     <!-- nest pojo -->
+        <association property="dept" column="deptId" select="getDeptById" />
     </resultMap>
 
+    <select id="getDeptById" resultType="com.github.miemiedev.mybatis.crud.Dept">
+        select * from test_dept where id = #{id}
+    </select>
+
+    <select id="find" resultMap="UserResultMap">
+        select * from test_user
+    </select>
+
+    <!-- #TableName(ResultMapId) -->
     <sql id="table">
          #TEST_USER(UserResultMap)
     </sql>
