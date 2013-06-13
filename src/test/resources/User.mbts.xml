@@ -10,7 +10,7 @@
         <result property="gender" column="gender"/>
         <result property="city" column="city"/>
         <result property="score" column="score"/>
-        <result property="dept.id" column="deptId"/>     <!-- nest pojo -->
+        <result property="dept.id" column="deptId"/>     <!-- nested pojo -->
         <association property="dept" column="deptId" select="getDeptById" />
     </resultMap>
 
